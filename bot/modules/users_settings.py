@@ -684,11 +684,19 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
             )
         buttons.data_button("Back", f"userset {user_id} back")
         buttons.data_button("Close", f"userset {user_id} close")
-        rmsg = """You can provide a list of FFmpeg command arguments for files before upload. Start directly with the arguments (omit ffmpeg).
+        rmsg = """List FFmpeg arguments for files before upload (without `ffmpeg`):
 
-Notes:
-1. Use -del in any list to delete original files after processing.
-2. Seeding will be disabled with this option.
+1. Add `-del` to delete the original file after the command is completed.
+2. Seeding will be disabled when using this option.
+3. Must be a list of lists, even if only one list is provided.
+
+Example:
+<blockquote>
+-i mltb.mkv -c copy -c:s srt mltb.mkv -del  
+-i mltb.video -c copy -c:s srt mltb  
+-i mltb.m4a -c:a libmp3lame -q:a 2 mltb.mp3  
+-i mltb.audio -c:a libmp3lame -q:a 2 mltb.mp3  
+</blockquote>
 """
         await edit_message(message, rmsg, buttons.build_menu(1))
         pfunc = partial(set_option, pre_event=query, option="ffmpeg_cmds")
