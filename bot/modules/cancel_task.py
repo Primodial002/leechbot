@@ -1,8 +1,9 @@
 from asyncio import sleep
+import re
 from pyrogram.filters import command, regex
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 
-from bot import task_dict, bot, task_dict_lock, OWNER_ID, user_data, multi_tags
+from bot import task_dict, bot, bot_name, task_dict_lock, OWNER_ID, user_data, multi_tags
 from ..helper.ext_utils.bot_utils import new_task
 from ..helper.ext_utils.status_utils import (
     get_task_by_gid,
@@ -23,9 +24,12 @@ from ..helper.telegram_helper.message_utils import (
 @new_task
 async def cancel_task(_, message):
     user_id = message.from_user.id if message.from_user else message.sender_chat.id
-    msg = message.text.split()
-    if len(msg) > 1:
-        gid = msg[1]
+    msg = re.search(
+        rf"/{BotCommands.CancelTaskCommand[0]}(?:@{bot_name})?[_ ]([a-zA-Z0-9_-]+)(?:@{bot_name})?",
+        message.text
+    )
+    if msg:
+        gid = msg.group(1)
         if len(gid) == 4:
             multi_tags.discard(gid)
             return
@@ -40,7 +44,7 @@ async def cancel_task(_, message):
         if task is None:
             await send_message(message, "This is not an active task!")
             return
-    elif len(msg) == 1:
+    else:
         msg = (
             "Reply to an active Command message which was used to start the download"
             f" or send <code>/{BotCommands.CancelTaskCommand[0]} GID</code> to cancel it!"
@@ -194,6 +198,14 @@ bot.add_handler(
         cancell_all_buttons,
         filters=command(BotCommands.CancelAllCommand, case_sensitive=True)
         & CustomFilters.authorized,
+    )
+)
+bot.add_handler( # type: ignore
+    MessageHandler(
+        cancel_task,
+        filters=regex(
+            rf"^/{BotCommands.CancelTaskCommand[0]}(_\w+)?(?!all)"
+        ) & CustomFilters.authorized,
     )
 )
 bot.add_handler(CallbackQueryHandler(cancel_all_update, filters=regex("^canall")))
