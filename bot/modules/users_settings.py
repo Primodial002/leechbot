@@ -690,13 +690,11 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
 2. Seeding will be disabled when using this option.
 3. Must be a list of lists, even if only one list is provided.
 
-Example:
-<blockquote>
+Example:<blockquote>
 -i mltb.mkv -c copy -c:s srt mltb.mkv -del  
 -i mltb.video -c copy -c:s srt mltb  
 -i mltb.m4a -c:a libmp3lame -q:a 2 mltb.mp3  
--i mltb.audio -c:a libmp3lame -q:a 2 mltb.mp3  
-</blockquote>
+-i mltb.audio -c:a libmp3lame -q:a 2 mltb.mp3</blockquote>
 """
         await edit_message(message, rmsg, buttons.build_menu(1))
         pfunc = partial(set_option, pre_event=query, option="ffmpeg_cmds")
