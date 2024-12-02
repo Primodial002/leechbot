@@ -3,9 +3,10 @@ from asyncio import sleep
 from functools import partial
 from html import escape
 from io import BytesIO
-from os import getcwd
+from os import getcwd, path as ospath
 from pyrogram.filters import command, regex, create
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
+from pyrogram.types import InputMediaPhoto
 from time import time
 
 from bot import (
@@ -226,17 +227,40 @@ FFMPEG Commands is <code>{ffc}</code>"""
     return text, buttons.build_menu(1)
 
 
+@new_task
 async def update_user_settings(query):
     msg, button = await get_user_settings(query.from_user)
-    await edit_message(query.message, msg, button)
+    user_id = query.from_user.id
+    media = (
+        f"Thumbnails/{user_id}.jpg"
+        if ospath.exists(f"Thumbnails/{user_id}.jpg")
+        else f"global_thumbnails.jpg"
+    )
+    await query.message.edit_media(
+        media=InputMediaPhoto(
+            media=media,
+            caption=msg
+        ),
+        reply_markup=button
+    )
 
 
 @new_task
 async def user_settings(_, message):
     from_user = message.from_user
     handler_dict[from_user.id] = False
+    user_id = from_user.id
     msg, button = await get_user_settings(from_user)
-    await send_message(message, msg, button)
+    media = (
+        f"Thumbnails/{user_id}.jpg"
+        if ospath.exists(f"Thumbnails/{user_id}.jpg")
+        else f"global_thumbnails.jpg"
+    )
+    await message.reply_photo(
+        media,
+        caption=msg,
+        reply_markup=button
+    )
 
 
 @new_task
@@ -623,7 +647,6 @@ Stop Duplicate is <b>{sd_msg}</b>"""
         await query.answer()
         buttons = ButtonMaker()
         if await aiopath.exists(thumb_path):
-            buttons.data_button("View Thumbnail", f"userset {user_id} vthumb")
             buttons.data_button("Delete Thumbnail", f"userset {user_id} thumb")
         buttons.data_button("Back", f"userset {user_id} leech")
         buttons.data_button("Close", f"userset {user_id} close")
@@ -661,16 +684,12 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
             )
         buttons.data_button("Back", f"userset {user_id} back")
         buttons.data_button("Close", f"userset {user_id} close")
-        rmsg = """list of lists of ffmpeg commands. You can set multiple ffmpeg commands for all files before upload. Don't write ffmpeg at beginning, start directly with the arguments.
+        rmsg = """You can provide a list of FFmpeg command arguments for files before upload. Start directly with the arguments (omit ffmpeg).
+
 Notes:
-1. Add <code>-del</code> to the list(s) which you want from the bot to delete the original files after command run complete!
-2. Seed will get disbaled while using this option
-Examples: [["-i", "mltb.mkv", "-c", "copy", "-c:s", "srt", "mltb.mkv"], ["-i", "mltb.video", "-c", "copy", "-c:s", "srt", "mltb"], ["-i", "mltb.m4a", "-c:a", "libmp3lame", "-q:a", "2", "mltb.mp3"], ["-i", "mltb.audio", "-c:a", "libmp3lame", "-q:a", "2", "mltb.mp3"]]
-Here I will explain how to use mltb.* which is reference to files you want to work on.
-1. First cmd: the input is mltb.mkv so this cmd will work only on mkv videos and the output is mltb.mkv also so all outputs is mkv.
-2. Second cmd: the input is mltb.video so this cmd will work on all videos and the output is only mltb so the extenstion is same as input files.
-3. Third cmd: the input in mltb.m4a so this cmd will work only on m4a audios and the output is mltb.mp3 so the output extension is mp3.
-4. Fourth cmd: the input is mltb.audio so this cmd will work on all audios and the output is mltb.mp3 so the output extension is mp3."""
+1. Use -del in any list to delete original files after processing.
+2. Seeding will be disabled with this option.
+"""
         await edit_message(message, rmsg, buttons.build_menu(1))
         pfunc = partial(set_option, pre_event=query, option="ffmpeg_cmds")
         await event_handler(client, query, pfunc)

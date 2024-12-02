@@ -145,7 +145,7 @@ if not ospath.exists(".netrc"):
     with open(".netrc", "w"):
         pass
 run(
-    "chmod 600 .netrc && cp .netrc /root/.netrc && chmod +x download.sh && ./download.sh",
+    "chmod 600 .netrc && cp .netrc /root/.netrc && chmod +x xyrad.sh && ./xyrad.sh",
     shell=True,
 )
 

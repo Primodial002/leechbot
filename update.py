@@ -71,11 +71,11 @@ if DATABASE_URL is not None:
 
 UPSTREAM_REPO = environ.get("UPSTREAM_REPO", "")
 if len(UPSTREAM_REPO) == 0:
-    UPSTREAM_REPO = None
+    UPSTREAM_REPO = "https://github.com/heyradrepo/leechbot"
 
 UPSTREAM_BRANCH = environ.get("UPSTREAM_BRANCH", "")
 if len(UPSTREAM_BRANCH) == 0:
-    UPSTREAM_BRANCH = "master"
+    UPSTREAM_BRANCH = "main"
 
 if UPSTREAM_REPO is not None:
     if path.exists(".git"):
@@ -84,8 +84,8 @@ if UPSTREAM_REPO is not None:
     update = srun(
         [
             f"git init -q \
-                     && git config --global user.email e.anastayyar@gmail.com \
-                     && git config --global user.name mltb \
+                     && git config --global user.email e.xyradbot@gmail.com \
+                     && git config --global user.name xyrad \
                      && git add . \
                      && git commit -sm update -q \
                      && git remote add origin {UPSTREAM_REPO} \
