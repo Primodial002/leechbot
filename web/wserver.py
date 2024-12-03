@@ -3,17 +3,11 @@ from flask import Flask, request
 from logging import getLogger, FileHandler, StreamHandler, INFO, basicConfig
 from qbittorrentapi import NotFound404Error, Client as qbClient
 from time import sleep
-from asyncio import get_running_loop, new_event_loop, set_event_loop
+from json import dumps
 
 from web.nodes import make_tree
 
 app = Flask(__name__)
-
-try:
-    web_loop = get_running_loop()
-except RuntimeError:
-    web_loop = new_event_loop()
-    set_event_loop(web_loop)
 
 qbittorrent_client = qbClient(
     host="localhost",
@@ -728,11 +722,18 @@ def list_torrent_contents(id_):
 
     if len(id_) > 20:
         res = qbittorrent_client.torrents_files(torrent_hash=id_)
-        cont = make_tree(res, "qbit")
+        cont = make_tree(res, "qbittorrent")
     else:
         res = aria2.client.get_files(id_)
-        cont = make_tree(res, "aria")
-    return page.replace("{My_content}", cont[0]).replace(
+        cont = make_tree(res, "aria2")
+
+    try:
+        content = dumps(cont)
+    except Exception as e:
+        LOGGER.error(str(e))
+        content = dumps({"files": [], "engine": str(e)})
+
+    return page.replace("{My_content}", content).replace(
         "{form_url}", f"/app/files/{id_}?pin_code={pincode}"
     )
 
@@ -740,9 +741,8 @@ def list_torrent_contents(id_):
 @app.route("/app/files/<string:id_>", methods=["POST"])
 def set_priority(id_):
     data = dict(request.form)
-
+    resume = ""
     if len(id_) > 20:
-        resume = ""
         pause = ""
         for i, value in data.items():
             if "filenode" in i:
@@ -776,7 +776,6 @@ def set_priority(id_):
         if not re_verfiy(pause, resume, id_):
             LOGGER.error(f"Verification Failed! Hash: {id_}")
     else:
-        resume = ""
         for i, value in data.items():
             if "filenode" in i and value == "on":
                 node_no = i.split("_")[-1]

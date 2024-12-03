@@ -70,7 +70,7 @@ async def select(_, message):
     ]:
         await send_message(
             message,
-            "Task should be in download or pause (incase message deleted by wrong) or queued status (incase you have used torrent or nzb file)!",
+            "Task should be in download or pause (incase message deleted by wrong) or queued status (incase you have used torrent file)!",
         )
         return
     if task.name().startswith("[METADATA]") or task.name().startswith("Trying"):
@@ -79,21 +79,21 @@ async def select(_, message):
 
     try:
         id_ = task.gid()
-        if not task.queued:
-            if task.listener.is_qbit:
+        if task.listener.is_qbit:
+            if not task.queued:
                 await sync_to_async(task.update)
                 id_ = task.hash()
                 await sync_to_async(
                     qbittorrent_client.torrents_pause, torrent_hashes=id_
                 )
-            else:
-                await sync_to_async(task.update)
-                try:
-                    await sync_to_async(aria2.client.force_pause, id_)
-                except Exception as e:
-                    LOGGER.error(
-                        f"{e} Error in pause, this mostly happens after abuse aria2"
-                    )
+        elif not task.queued:
+            await sync_to_async(task.update)
+            try:
+                await sync_to_async(aria2.client.force_pause, id_)
+            except Exception as e:
+                LOGGER.error(
+                    f"{e} Error in pause, this mostly happens after abuse aria2"
+                )
         task.listener.select = True
     except:
         await send_message(message, "This is not a bittorrent or sabnzbd task!")
