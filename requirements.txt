@@ -6,6 +6,7 @@ aria2p
 asyncio
 cloudscraper
 dnspython
+electrogram
 feedparser
 flask
 gevent
@@ -20,14 +21,12 @@ natsort
 pillow
 psutil
 pymongo
-pyrofork
 python-dotenv
 python-magic
 qbittorrent-api
 requests
 telegraph
 tenacity
-tgcrypto
 urllib3
 uvloop
 xattr
