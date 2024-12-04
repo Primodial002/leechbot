@@ -199,30 +199,33 @@ async def get_user_settings(from_user):
 
     buttons.data_button("Close", f"userset {user_id} close")
 
-    text = f"""<u>Settings for {name}</u>
-Leech Type is <b>{ltype}</b>
-Custom Thumbnail <b>{thumbmsg}</b>
-Leech Split Size is <b>{split_size}</b>
-Equal Splits is <b>{equal_splits}</b>
-Media Group is <b>{media_group}</b>
-Leech Prefix is <code>{escape(lprefix)}</code>
-Leech Destination is <code>{leech_dest}</code>
-Leech by <b>{leech_method}</b> session
-Mixed Leech is <b>{mixed_leech}</b>
-Thumbnail Layout is <b>{thumb_layout}</b>
-Rclone Config <b>{rccmsg}</b>
-Rclone Path is <code>{rccpath}</code>
-Gdrive Token <b>{tokenmsg}</b>
-Upload Paths is <b>{upload_paths}</b>
-Gdrive ID is <code>{gdrive_id}</code>
-Index Link is <code>{index}</code>
-Stop Duplicate is <b>{sd_msg}</b>
-Default Package is <b>{du}</b>
-Upload using <b>{tr}</b> token/config
-Name substitution is <b>{ns_msg}</b>
-Excluded Extensions is <code>{ex_ex}</code>
-YT-DLP Options is <code>{escape(ytopt)}</code>
-FFMPEG Commands is <code>{ffc}</code>"""
+    text = (
+    f"<u>Settings for {name}</u>\n"
+    f"Leech Type: <b>{ltype}</b>\n"
+    f"Custom Thumbnail: <b>{thumbmsg}</b>\n"
+    f"Split Size: <b>{split_size}</b>\n"
+    f"Equal Splits: <b>{equal_splits}</b>\n"
+    f"Media Group: <b>{media_group}</b>\n"
+    f"Prefix: <code>{escape(lprefix)}</code>\n"
+    f"Destination: <code>{leech_dest}</code>\n"
+    f"Leech by: <b>{leech_method}</b>\n"
+    f"Mixed Leech: <b>{mixed_leech}</b>\n"
+    f"Thumbnail Layout: <b>{thumb_layout}</b>\n"
+    f"Rclone Config: <b>{rccmsg}</b>\n"
+    f"Rclone Path: <code>{rccpath}</code>\n"
+    f"Gdrive Token: <b>{tokenmsg}</b>\n"
+    f"Upload Paths: <b>{upload_paths}</b>\n"
+    f"Gdrive ID: <code>{gdrive_id}</code>\n"
+    f"Index Link: <code>{index}</code>\n"
+    f"Stop Duplicate: <b>{sd_msg}</b>\n"
+    f"Default Package: <b>{du}</b>\n"
+    f"Upload using: <b>{tr}</b>\n"
+    f"Name Substitution: <b>{ns_msg}</b>\n"
+    f"Excluded Extensions: <code>{ex_ex}</code>\n"
+    f"YT-DLP Options: <code>{escape(ytopt)}</code>\n"
+    f"FFMPEG Commands: <code>{ffc}</code>"
+)
+
 
     return text, buttons.build_menu(1)
 
@@ -572,18 +575,19 @@ async def edit_user_settings(client, query):
 
         buttons.data_button("Back", f"userset {user_id} back")
         buttons.data_button("Close", f"userset {user_id} close")
-        text = f"""<u>Leech Settings for {name}</u>
-Leech Type is <b>{ltype}</b>
-Custom Thumbnail <b>{thumbmsg}</b>
-Leech Split Size is <b>{split_size}</b>
-Equal Splits is <b>{equal_splits}</b>
-Media Group is <b>{media_group}</b>
-Leech Prefix is <code>{escape(lprefix)}</code>
-Leech Destination is <code>{leech_dest}</code>
-Leech by <b>{leech_method}</b> session
-Mixed Leech is <b>{mixed_leech}</b>
-Thumbnail Layout is <b>{thumb_layout}</b>
-"""
+        text = (
+    f"<u>Leech Settings for {name}</u>\n"
+    f"Leech Type: <b>{ltype}</b>\n"
+    f"Custom Thumbnail: <b>{thumbmsg}</b>\n"
+    f"Split Size: <b>{split_size}</b>\n"
+    f"Equal Splits: <b>{equal_splits}</b>\n"
+    f"Media Group: <b>{media_group}</b>\n"
+    f"Prefix: <code>{escape(lprefix)}</code>\n"
+    f"Destination: <code>{leech_dest}</code>\n"
+    f"Leech by: <b>{leech_method}</b>\n"
+    f"Mixed Leech: <b>{mixed_leech}</b>\n"
+    f"Thumbnail Layout: <b>{thumb_layout}</b>"
+)
         await edit_message(message, text, buttons.build_menu(2))
     elif data[2] == "rclone":
         await query.answer()
@@ -599,9 +603,11 @@ Thumbnail Layout is <b>{thumb_layout}</b>
             rccpath = RP
         else:
             rccpath = "None"
-        text = f"""<u>Rclone Settings for {name}</u>
-Rclone Config <b>{rccmsg}</b>
-Rclone Path is <code>{rccpath}</code>"""
+        text = (
+    f"<u>Rclone Settings for {name}</u>\n"
+    f"Config: <b>{rccmsg}</b>\n"
+    f"Path: <code>{rccpath}</code>"
+)
         await edit_message(message, text, buttons.build_menu(1))
     elif data[2] == "gdrive":
         await query.answer()
@@ -633,11 +639,13 @@ Rclone Path is <code>{rccpath}</code>"""
         else:
             gdrive_id = "None"
         index = user_dict["index_url"] if user_dict.get("index_url", False) else "None"
-        text = f"""<u>Gdrive Tools Settings for {name}</u>
-Gdrive Token <b>{tokenmsg}</b>
-Gdrive ID is <code>{gdrive_id}</code>
-Index URL is <code>{index}</code>
-Stop Duplicate is <b>{sd_msg}</b>"""
+        text = (
+    f"<u>Gdrive Tools Settings for {name}</u>\n"
+    f"Token: <b>{tokenmsg}</b>\n"
+    f"ID: <code>{gdrive_id}</code>\n"
+    f"Index URL: <code>{index}</code>\n"
+    f"Stop Duplicate: <b>{sd_msg}</b>"
+)
         await edit_message(message, text, buttons.build_menu(1))
     elif data[2] == "vthumb":
         await query.answer()
@@ -690,11 +698,11 @@ Check all yt-dlp api options from this <a href='https://github.com/yt-dlp/yt-dlp
 2. Seeding will be disabled when using this option.
 3. Must be a list of lists, even if only one list is provided.
 
-Example:<blockquote>
+Example:
 -i mltb.mkv -c copy -c:s srt mltb.mkv -del  
 -i mltb.video -c copy -c:s srt mltb  
 -i mltb.m4a -c:a libmp3lame -q:a 2 mltb.mp3  
--i mltb.audio -c:a libmp3lame -q:a 2 mltb.mp3</blockquote>
+-i mltb.audio -c:a libmp3lame -q:a 2 mltb.mp3
 """
         await edit_message(message, rmsg, buttons.build_menu(1))
         pfunc = partial(set_option, pre_event=query, option="ffmpeg_cmds")
