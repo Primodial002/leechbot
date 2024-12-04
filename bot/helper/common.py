@@ -54,15 +54,7 @@ from .ext_utils.media_utils import (
 )
 from .mirror_leech_utils.gdrive_utils.list import GoogleDriveList
 from .mirror_leech_utils.rclone_utils.list import RcloneList
-from .mirror_leech_utils.status_utils.extract_status import ExtractStatus
-from .mirror_leech_utils.status_utils.sample_video_status import (
-    SampleVideoStatus,
-)
-from .mirror_leech_utils.status_utils.media_convert_status import (
-    MediaConvertStatus,
-)
-from .mirror_leech_utils.status_utils.split_status import SplitStatus
-from .mirror_leech_utils.status_utils.zip_status import ZipStatus
+from .mirror_leech_utils.status_utils.sevenz_status import SevenZStatus
 from .mirror_leech_utils.status_utils.ffmpeg_status import FFmpegStatus
 from .telegram_helper.bot_commands import BotCommands
 from .telegram_helper.message_utils import (
@@ -121,7 +113,7 @@ class TaskConfig:
         self.as_doc = False
         self.ffmpeg_cmds = None
         self.chat_thread_id = None
-        self.suproc = None
+        self.subproc = None
         self.thumb = None
         self.extension_filter = []
         self.is_super_chat = self.message.chat.type.name in ["SUPERGROUP", "CHANNEL"]
@@ -550,13 +542,13 @@ class TaskConfig:
                         if self.is_cancelled:
                             return ""
                         async with subprocess_lock:
-                            self.suproc = await create_subprocess_exec(
+                            self.subproc = await create_subprocess_exec(
                                 *cmd, stderr=PIPE
                             )
-                        _, stderr = await self.suproc.communicate()
+                        _, stderr = await self.subproc.communicate()
                         if self.is_cancelled:
                             return ""
-                        code = self.suproc.returncode
+                        code = self.subproc.returncode
                         if code != 0:
                             try:
                                 stderr = stderr.decode().strip()
@@ -574,11 +566,11 @@ class TaskConfig:
             if self.is_cancelled:
                 return ""
             async with subprocess_lock:
-                self.suproc = await create_subprocess_exec(*cmd, stderr=PIPE)
-            _, stderr = await self.suproc.communicate()
+                self.subproc = await create_subprocess_exec(*cmd, stderr=PIPE)
+            _, stderr = await self.subproc.communicate()
             if self.is_cancelled:
                 return ""
-            code = self.suproc.returncode
+            code = self.subproc.returncode
             if code != 0:
                 try:
                     stderr = stderr.decode().strip()
@@ -595,7 +587,7 @@ class TaskConfig:
         try:
             LOGGER.info(f"Extracting: {self.name}")
             async with task_dict_lock:
-                task_dict[self.mid] = ExtractStatus(self, gid)
+                task_dict[self.mid] = SevenZStatus(self, gid, "Extract")
             if await aiopath.isdir(dl_path):
                 if self.seed:
                     self.new_dir = f"{self.dir}10000"
@@ -633,13 +625,13 @@ class TaskConfig:
                             if self.is_cancelled:
                                 return ""
                             async with subprocess_lock:
-                                self.suproc = await create_subprocess_exec(
+                                self.subproc = await create_subprocess_exec(
                                     *cmd, stderr=PIPE
                                 )
-                            _, stderr = await self.suproc.communicate()
+                            _, stderr = await self.subproc.communicate()
                             if self.is_cancelled:
                                 return ""
-                            code = self.suproc.returncode
+                            code = self.subproc.returncode
                             if code != 0:
                                 try:
                                     stderr = stderr.decode().strip()
@@ -650,8 +642,8 @@ class TaskConfig:
                                 )
                     if (
                         not self.seed
-                        and self.suproc is not None
-                        and self.suproc.returncode == 0
+                        and self.subproc is not None
+                        and self.subproc.returncode == 0
                     ):
                         for file_ in files:
                             if is_archive_split(file_) or is_archive(file_):
@@ -681,11 +673,11 @@ class TaskConfig:
                 if self.is_cancelled:
                     return ""
                 async with subprocess_lock:
-                    self.suproc = await create_subprocess_exec(*cmd, stderr=PIPE)
-                _, stderr = await self.suproc.communicate()
+                    self.subproc = await create_subprocess_exec(*cmd, stderr=PIPE)
+                _, stderr = await self.subproc.communicate()
                 if self.is_cancelled:
                     return ""
-                code = self.suproc.returncode
+                code = self.subproc.returncode
                 if code == -9:
                     self.is_cancelled = True
                     return ""
@@ -724,7 +716,7 @@ class TaskConfig:
             up_path = f"{dl_path}.7z"
             delete = True
         async with task_dict_lock:
-            task_dict[self.mid] = ZipStatus(self, gid)
+            task_dict[self.mid] = SevenZStatus(self, gid, "Zip")
         size = await get_path_size(dl_path)
         if self.equal_splits:
             parts = -(-size // self.split_size)
@@ -761,11 +753,11 @@ class TaskConfig:
         if self.is_cancelled:
             return ""
         async with subprocess_lock:
-            self.suproc = await create_subprocess_exec(*cmd, stderr=PIPE)
-        _, stderr = await self.suproc.communicate()
+            self.subproc = await create_subprocess_exec(*cmd, stderr=PIPE)
+        _, stderr = await self.subproc.communicate()
         if self.is_cancelled:
             return ""
-        code = self.suproc.returncode
+        code = self.subproc.returncode
         if code == -9:
             self.is_cancelled = True
             return ""
@@ -803,7 +795,7 @@ class TaskConfig:
                     if not checked:
                         checked = True
                         async with task_dict_lock:
-                            task_dict[self.mid] = SplitStatus(self, gid)
+                            task_dict[self.mid] = FFmpegStatus(self, gid, "Split")
                         LOGGER.info(f"Splitting: {self.name}")
                     res = await split_file(
                         f_path, f_size, dirpath, file_, self.split_size, self
@@ -842,7 +834,7 @@ class TaskConfig:
             part_duration = 4
 
         async with task_dict_lock:
-            task_dict[self.mid] = SampleVideoStatus(self, gid)
+            task_dict[self.mid] = FFmpegStatus(self, gid, "Sample Video")
 
         checked = False
         if await aiopath.isfile(dl_path):
@@ -955,7 +947,7 @@ class TaskConfig:
                 if not checked:
                     checked = True
                     async with task_dict_lock:
-                        task_dict[self.mid] = MediaConvertStatus(self, gid)
+                        task_dict[self.mid] = FFmpegStatus(self, gid, "Convert")
                     await cpu_eater_lock.acquire()
                     LOGGER.info(f"Converting: {self.name}")
                 else:
@@ -978,7 +970,7 @@ class TaskConfig:
                 if not checked:
                     checked = True
                     async with task_dict_lock:
-                        task_dict[self.mid] = MediaConvertStatus(self, gid)
+                        task_dict[self.mid] = FFmpegStatus(self, gid, "Convert")
                     await cpu_eater_lock.acquire()
                     LOGGER.info(f"Converting: {self.name}")
                 else:
@@ -1126,7 +1118,12 @@ class TaskConfig:
     async def proceed_ffmpeg(self, dl_path, gid):
         checked = False
         for ffmpeg_cmd in self.ffmpeg_cmds:
-            cmd = ["xytool"] + ffmpeg_cmd
+            cmd = [
+                "xytool",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+            ] + ffmpeg_cmd
             if "-del" in cmd:
                 cmd.remove("-del")
                 delete_files = True
@@ -1161,7 +1158,7 @@ class TaskConfig:
                 if not checked:
                     checked = True
                     async with task_dict_lock:
-                        task_dict[self.mid] = FFmpegStatus(self, gid)
+                        task_dict[self.mid] = FFmpegStatus(self, gid, "FFmpeg")
                     await cpu_eater_lock.acquire()
                 LOGGER.info(f"Running ffmpeg cmd for: {file_path}")
                 cmd[index + 1] = file_path
@@ -1190,7 +1187,7 @@ class TaskConfig:
                         if not checked:
                             checked = True
                             async with task_dict_lock:
-                                task_dict[self.mid] = FFmpegStatus(self, gid)
+                                task_dict[self.mid] = FFmpegStatus(self, gid, "FFmpeg")
                             await cpu_eater_lock.acquire()
                         LOGGER.info(f"Running ffmpeg cmd for: {f_path}")
                         res = await run_ffmpeg_cmd(self, cmd, f_path)
