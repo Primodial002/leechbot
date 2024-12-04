@@ -35,7 +35,7 @@ async def rclone_serve_booter():
         except:
             pass
     cmd = [
-        "xyone",
+        "xyfetch",
         "serve",
         "http",
         "--config",

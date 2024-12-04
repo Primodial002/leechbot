@@ -1,4 +1,5 @@
 from sys import exit
+from inspect import signature
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aria2p import API as ariaAPI, Client as ariaClient
 from asyncio import Lock, new_event_loop, set_event_loop
@@ -18,7 +19,7 @@ from shutil import rmtree
 from os import remove, path as ospath, environ
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
-from pyrogram import Client as TgClient, enums
+from pyrogram import Client as TgClient, enums, utils
 from qbittorrentapi import Client as QbClient
 from socket import setdefaulttimeout
 from subprocess import Popen, run
@@ -31,6 +32,9 @@ from uvloop import install
 
 install()
 setdefaulttimeout(600)
+
+utils.MIN_CHAT_ID = -999999999999
+utils.MIN_CHANNEL_ID = -100999999999999
 
 getLogger("qbittorrentapi").setLevel(INFO)
 getLogger("requests").setLevel(INFO)
@@ -86,6 +90,7 @@ same_directory_lock = Lock()
 status_dict = {}
 task_dict = {}
 rss_dict = {}
+
 
 BOT_TOKEN = environ.get("BOT_TOKEN", "")
 if len(BOT_TOKEN) == 0:
@@ -171,26 +176,23 @@ if len(TELEGRAM_HASH) == 0:
     bot_loop.stop()
     exit(1)
 
+def xyClient(*args, **kwargs):
+    if 'max_concurrent_transmissions' in signature(TgClient.__init__).parameters:
+        kwargs['max_concurrent_transmissions'] = 1000
+    return TgClient(*args, **kwargs)
+
+IS_PREMIUM_USER = False
+user = ""
 USER_SESSION_STRING = environ.get("USER_SESSION_STRING", "")
 if len(USER_SESSION_STRING) != 0:
     log_info("Creating client from USER_SESSION_STRING")
     try:
-        user = TgClient(
-            "user",
-            TELEGRAM_API,
-            TELEGRAM_HASH,
-            session_string=USER_SESSION_STRING,
-            parse_mode=enums.ParseMode.HTML,
-            max_concurrent_transmissions=10,
-        ).start()
+        user = xyClient("user", TELEGRAM_API, TELEGRAM_HASH, session_string=USER_SESSION_STRING,
+                        parse_mode=enums.ParseMode.HTML, no_updates=True).start()
         IS_PREMIUM_USER = user.me.is_premium
-    except:
-        log_error("Failed to start client from USER_SESSION_STRING")
-        IS_PREMIUM_USER = False
+    except Exception as e:
+        log_error(f"Failed making client from USER_SESSION_STRING: {e}")
         user = ""
-else:
-    IS_PREMIUM_USER = False
-    user = ""
 
 GDRIVE_ID = environ.get("GDRIVE_ID", "")
 if len(GDRIVE_ID) == 0:
@@ -521,13 +523,12 @@ aria2c_global = [
 ]
 
 log_info("Creating client from BOT_TOKEN")
-bot = TgClient(
+bot = xyClient(
     "bot",
     TELEGRAM_API,
     TELEGRAM_HASH,
     bot_token=BOT_TOKEN,
     parse_mode=enums.ParseMode.HTML,
-    max_concurrent_transmissions=10,
 ).start()
 bot_name = bot.me.username
 

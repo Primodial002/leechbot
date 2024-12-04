@@ -187,7 +187,7 @@ class Clone(TaskListener):
             else:
                 src_path = self.link
                 cmd = [
-                    "xyone",
+                    "xyfetch",
                     "lsjson",
                     "--fast-list",
                     "--stat",
@@ -241,7 +241,7 @@ class Clone(TaskListener):
                 return
             LOGGER.info(f"Cloning Done: {self.name}")
             cmd1 = [
-                "xyone",
+                "xyfetch",
                 "lsf",
                 "--fast-list",
                 "-R",
@@ -251,7 +251,7 @@ class Clone(TaskListener):
                 destination,
             ]
             cmd2 = [
-                "xyone",
+                "xyfetch",
                 "lsf",
                 "--fast-list",
                 "-R",
@@ -261,7 +261,7 @@ class Clone(TaskListener):
                 destination,
             ]
             cmd3 = [
-                "xyone",
+                "xyfetch",
                 "size",
                 "--fast-list",
                 "--json",
