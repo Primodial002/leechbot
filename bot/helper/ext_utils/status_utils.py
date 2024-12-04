@@ -54,11 +54,12 @@ STATUSES = {
 
 
 async def get_task_by_gid(gid: str):
+    gid = gid[:6]
     async with task_dict_lock:
         for tk in task_dict.values():
             if hasattr(tk, "seeding"):
                 await sync_to_async(tk.update)
-            if tk.gid() == gid:
+            if tk.gid()[:6] == gid:
                 return tk
         return None
 
@@ -184,7 +185,7 @@ async def get_readable_message(sid, is_user, page_no=1, status="All", page_step=
         tasks[start_position : STATUS_LIMIT + start_position], start=1
     ):
         tstatus = await sync_to_async(task.status) if status == "All" else status
-        task_gid = task.gid()
+        task_gid = task.gid()[:6]
         cancel_task = f"<code>/cancel_{task_gid}</code>" if "-" in task_gid else f"<b>/cancel_{task_gid}</b>"
         if task.listener.is_super_chat:
             msg += f"<b>{index + start_position}.<a href='{task.listener.message.link}'>{tstatus}</a>: </b>"
@@ -230,17 +231,10 @@ async def get_readable_message(sid, is_user, page_no=1, status="All", page_step=
     buttons = ButtonMaker()
     if len(tasks) > STATUS_LIMIT:
         msg += f"<b>Page:</b> {page_no}/{pages} | <b>Tasks:</b> {tasks_no} | <b>Step:</b> {page_step}\n"
-        buttons.data_button("<<", f"status {sid} pre", position="header")
-        buttons.data_button(">>", f"status {sid} nex", position="header")
-        if tasks_no > 30:
-            for i in [1, 2, 4, 6, 8, 10, 15]:
-                buttons.data_button(i, f"status {sid} ps {i}", position="footer")
-    if status != "All" or tasks_no > 20:
-        for label, status_value in list(STATUSES.items())[:9]:
-            if status_value != status:
-                buttons.data_button(label, f"status {sid} st {status_value}")
-    buttons.data_button("♻️", f"status {sid} ref", position="header")
-    button = buttons.build_menu(8)
+        buttons.data_button("◀️", f"status {sid} pre", position="header")
+        buttons.data_button("♻️", f"status {sid} ref", position="header")
+        buttons.data_button("▶️", f"status {sid} nex", position="header")
+        button = buttons.build_menu(3)
     msg += f"<b>CPU:</b> {cpu_percent()}% | <b>FREE:</b> {get_readable_file_size(disk_usage(DOWNLOAD_DIR).free)}"
     msg += f"\n<b>RAM:</b> {virtual_memory().percent}% | <b>UPTIME:</b> {get_readable_time(time() - botStartTime)}"
     return msg, button
