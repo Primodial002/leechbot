@@ -237,7 +237,7 @@ async def update_user_settings(query):
     media = (
         f"Thumbnails/{user_id}.jpg"
         if ospath.exists(f"Thumbnails/{user_id}.jpg")
-        else f"global_thumbnails.jpg"
+        else f"xyrad.jpg"
     )
     await query.message.edit_media(
         media=InputMediaPhoto(
@@ -257,7 +257,7 @@ async def user_settings(_, message):
     media = (
         f"Thumbnails/{user_id}.jpg"
         if ospath.exists(f"Thumbnails/{user_id}.jpg")
-        else f"global_thumbnails.jpg"
+        else f"xyrad.jpg"
     )
     await message.reply_photo(
         media,
