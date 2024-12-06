@@ -83,6 +83,88 @@ async def status_pages(_, query):
         async with task_dict_lock:
             status_dict[key]["status"] = data[3]
         await update_status_message(key, force=True)
+    elif data[2] == "ov":
+        message = query.message
+        tasks = {
+            "Download": 0,
+            "Upload": 0,
+            "Seed": 0,
+            "Archive": 0,
+            "Extract": 0,
+            "Split": 0,
+            "QueueDl": 0,
+            "QueueUp": 0,
+            "Clone": 0,
+            "CheckUp": 0,
+            "Pause": 0,
+            "SamVid": 0,
+            "ConvertMedia": 0,
+            "FFmpeg": 0,
+        }
+        dl_speed = 0
+        up_speed = 0
+        seed_speed = 0
+        async with task_dict_lock:
+            for download in task_dict.values():
+                match await sync_to_async(download.status):
+                    case MirrorStatus.STATUS_DOWNLOAD:
+                        tasks["Download"] += 1
+                        dl_speed += speed_string_to_bytes(download.speed())
+                    case MirrorStatus.STATUS_UPLOAD:
+                        tasks["Upload"] += 1
+                        up_speed += speed_string_to_bytes(download.speed())
+                    case MirrorStatus.STATUS_SEED:
+                        tasks["Seed"] += 1
+                        seed_speed += speed_string_to_bytes(download.seed_speed())
+                    case MirrorStatus.STATUS_ARCHIVE:
+                        tasks["Archive"] += 1
+                    case MirrorStatus.STATUS_EXTRACT:
+                        tasks["Extract"] += 1
+                    case MirrorStatus.STATUS_SPLIT:
+                        tasks["Split"] += 1
+                    case MirrorStatus.STATUS_QUEUEDL:
+                        tasks["QueueDl"] += 1
+                    case MirrorStatus.STATUS_QUEUEUP:
+                        tasks["QueueUp"] += 1
+                    case MirrorStatus.STATUS_CLONE:
+                        tasks["Clone"] += 1
+                    case MirrorStatus.STATUS_CHECK:
+                        tasks["CheckUp"] += 1
+                    case MirrorStatus.STATUS_PAUSED:
+                        tasks["Pause"] += 1
+                    case MirrorStatus.STATUS_SAMVID:
+                        tasks["SamVid"] += 1
+                    case MirrorStatus.STATUS_CONVERT:
+                        tasks["ConvertMedia"] += 1
+                    case MirrorStatus.STATUS_FFMPEG:
+                        tasks["FFMPEG"] += 1
+                    case _:
+                        tasks["Download"] += 1
+                        dl_speed += speed_string_to_bytes(download.speed())
+
+        msg = (
+            f"DL: {tasks['Download']} | "
+            f"UP: {tasks['Upload']} | "
+            f"SD: {tasks['Seed']} | "
+            f"EX: {tasks['Extract']} | "
+            f"SP: {tasks['Split']} | "
+            f"AR: {tasks['Archive']}\n"
+            f"QU: {tasks['QueueUp']} | "
+            f"QD: {tasks['QueueDl']} | "
+            f"PA: {tasks['Pause']} | "
+            f"SV: {tasks['SamVid']} | "
+            f"CM: {tasks['ConvertMedia']} | "
+            f"CL: {tasks['Clone']}\n"
+            f"FF: {tasks['FFmpeg']}\n\n"
+
+            f"DL: {get_readable_file_size(dl_speed)}/s | " # type: ignore
+            f"UL: {get_readable_file_size(up_speed)}/s | " # type: ignore
+            f"SD: {get_readable_file_size(seed_speed)}/s" # type: ignore
+        )
+        await query.answer(
+            msg,
+            show_alert=True
+        )
 
 
 bot.add_handler(

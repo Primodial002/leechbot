@@ -232,7 +232,7 @@ async def get_readable_message(sid, is_user, page_no=1, status="All", page_step=
     if len(tasks) > STATUS_LIMIT:
         msg += f"<b>Page:</b> {page_no}/{pages} | <b>Tasks:</b> {tasks_no} | <b>Step:</b> {page_step}\n"
         buttons.data_button("◀️", f"status {sid} pre", position="header")
-        buttons.data_button("♻️", f"status {sid} ref", position="header")
+        buttons.data_button("ᴛᴀꜱᴋ\nɪɴꜰᴏ", f"status {sid} ov", position="footer")
         buttons.data_button("▶️", f"status {sid} nex", position="header")
         button = buttons.build_menu(3)
     msg += f"<b>CPU:</b> {cpu_percent()}% | <b>FREE:</b> {get_readable_file_size(disk_usage(DOWNLOAD_DIR).free)}"
