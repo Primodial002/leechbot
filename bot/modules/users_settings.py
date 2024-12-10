@@ -120,6 +120,10 @@ async def get_user_settings(from_user):
         thumb_layout = config_dict["THUMBNAIL_LAYOUT"]
     else:
         thumb_layout = "None"
+    if user_dict.get("metadatatext", False):
+        metadatatext = user_dict["metadatatext"]
+    else:
+        metadatatext = "None"
 
     buttons.data_button("Leech", f"userset {user_id} leech")
 
@@ -211,6 +215,7 @@ async def get_user_settings(from_user):
     f"Leech by: <b>{leech_method}</b>\n"
     f"Mixed Leech: <b>{mixed_leech}</b>\n"
     f"Thumbnail Layout: <b>{thumb_layout}</b>\n"
+    f"Metadata Text: <code>{escape(metadatatext)}</code>\n"
     f"Rclone Config: <b>{rccmsg}</b>\n"
     f"Rclone Path: <code>{rccpath}</code>\n"
     f"Gdrive Token: <b>{tokenmsg}</b>\n"
@@ -448,6 +453,7 @@ async def edit_user_settings(client, query):
     elif data[2] in [
         "yt_opt",
         "lprefix",
+        "metadatatext",
         "index_url",
         "excluded_extensions",
         "name_sub",
@@ -573,6 +579,12 @@ async def edit_user_settings(client, query):
         else:
             thumb_layout = "None"
 
+        buttons.data_button("Metadata Text", f"userset {user_id} metadata_text")
+        if user_dict.get("metadatatext", False):
+            metadatatext = user_dict["metadatatext"]
+        else:
+            metadatatext = "None"
+
         buttons.data_button("Back", f"userset {user_id} back")
         buttons.data_button("Close", f"userset {user_id} close")
         text = (
@@ -586,9 +598,10 @@ async def edit_user_settings(client, query):
     f"Destination: <code>{leech_dest}</code>\n"
     f"Leech by: <b>{leech_method}</b>\n"
     f"Mixed Leech: <b>{mixed_leech}</b>\n"
-    f"Thumbnail Layout: <b>{thumb_layout}</b>"
+    f"Thumbnail Layout: <b>{thumb_layout}</b>\n"
+    f"Metadata Text: <code>{escape(metadatatext)}</code>"
 )
-        await edit_message(message, text, buttons.build_menu(2))
+        await edit_message(message, text,   buttons.build_menu(2))
     elif data[2] == "rclone":
         await query.answer()
         buttons = ButtonMaker()
@@ -801,6 +814,22 @@ Example:
             buttons.build_menu(1),
         )
         pfunc = partial(set_option, pre_event=query, option="lprefix")
+        await event_handler(client, query, pfunc)
+    elif data[2] == "metadata_text":
+        await query.answer()
+        buttons = ButtonMaker()
+        if (
+            user_dict.get("metadatatext", False)
+        ):
+            buttons.data_button("Remove Leech Metadata Text", f"userset {user_id} metadatatext")
+        buttons.data_button("Back", f"userset {user_id} leech")
+        buttons.data_button("Close", f"userset {user_id} close")
+        await edit_message(
+            message,
+            "Send Leech Metadata Text. Timeout: 60 sec",
+            buttons.build_menu(1),
+        )
+        pfunc = partial(set_option, pre_event=query, option="metadatatext")
         await event_handler(client, query, pfunc)
     elif data[2] == "ldest":
         await query.answer()

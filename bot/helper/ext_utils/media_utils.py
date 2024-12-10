@@ -1,13 +1,14 @@
+import json
 from PIL import Image
 from aiofiles.os import remove, path as aiopath, makedirs
 from asyncio import create_subprocess_exec, gather, wait_for
 from asyncio.subprocess import PIPE
-from os import path as ospath, cpu_count
+from os import path as ospath, cpu_count, replace as osreplace
 from re import search as re_search, escape
 from time import time
 from aioshutil import rmtree
 
-from bot import LOGGER, subprocess_lock, DOWNLOAD_DIR
+from bot import LOGGER, subprocess_lock, DOWNLOAD_DIR, user_data
 from .bot_utils import cmd_exec, sync_to_async
 from .files_utils import ARCH_EXT, get_mime_type
 
@@ -776,3 +777,102 @@ async def run_ffmpeg_cmd(listener, ffmpeg, path):
         if await aiopath.exists(output):
             await remove(output)
         return False
+
+async def edit_video_metadata(user_id, file_path):
+    if not file_path.lower().endswith(('.mp4', '.mkv')):
+        return
+
+    user_dict = user_data.get(user_id, {})
+    if user_dict.get("metadatatext", False):
+        metadata_text = user_dict["metadatatext"]
+    else:
+        return
+
+    file_name = ospath.basename(file_path)
+    temp_ffile_name = ospath.basename(file_path)
+    directory = ospath.dirname(file_path)
+    temp_file = f"{file_name}.temp.mkv"
+    temp_file_path = ospath.join(directory, temp_file)
+    
+    cmd = ['ffprobe', '-hide_banner', '-loglevel', 'error', '-print_format', 'json', '-show_streams', file_path]
+    process = await create_subprocess_exec(*cmd, stdout=PIPE, stderr=PIPE)
+    stdout, stderr = await process.communicate()
+
+    if process.returncode != 0:
+        print(f"Error getting stream info: {stderr.decode().strip()}")
+        return
+
+    try:
+        streams = json.loads(stdout)['streams']
+    except:
+        print(f"No streams found in the ffprobe output: {stdout.decode().strip()}")
+        return
+
+    cmd = [
+        'xytool', '-y', '-i', file_path, '-c', 'copy',
+        '-metadata:s:v:0', f'title={metadata_text}',
+        '-metadata', f'title={metadata_text}',
+        '-metadata', 'copyright=',
+        '-metadata', 'description=',
+        '-metadata', 'license=',
+        '-metadata', 'LICENSE=',
+        '-metadata', 'author=',
+        '-metadata', 'summary=',
+        '-metadata', 'comment=',
+        '-metadata', 'artist=',
+        '-metadata', 'album=',
+        '-metadata', 'genre=',
+        '-metadata', 'date=',
+        '-metadata', 'creation_time=',
+        '-metadata', 'language=',
+        '-metadata', 'publisher=',
+        '-metadata', 'encoder=',
+        '-metadata', 'SUMMARY=',
+        '-metadata', 'AUTHOR=',
+        '-metadata', 'WEBSITE=',
+        '-metadata', 'COMMENT=',
+        '-metadata', 'ENCODER=',
+        '-metadata', 'FILENAME=',
+        '-metadata', 'MIMETYPE=',
+        '-metadata', 'PURL=',
+        '-metadata', 'ALBUM='
+    ]
+
+    audio_index = 0
+    subtitle_index = 0
+    first_video = False
+
+    for stream in streams:
+        stream_index = stream['index']
+        stream_type = stream['codec_type']
+
+        if stream_type == 'video':
+            if not first_video:
+                cmd.extend(['-map', f'0:{stream_index}'])
+                first_video = True
+            cmd.extend([f'-metadata:s:v:{stream_index}', f'title={metadata_text}'])
+        elif stream_type == 'audio':
+            cmd.extend(['-map', f'0:{stream_index}', f'-metadata:s:a:{audio_index}', f'title={metadata_text}'])
+            audio_index += 1
+        elif stream_type == 'subtitle':
+            codec_name = stream.get('codec_name', 'unknown')
+            if codec_name in ['webvtt', 'unknown']:
+                print(f"Skipping unsupported subtitle metadata modification: {codec_name} for stream {stream_index}")
+            else:
+                cmd.extend(['-map', f'0:{stream_index}', f'-metadata:s:s:{subtitle_index}', f'title={metadata_text}'])
+                subtitle_index += 1
+        else:
+            cmd.extend(['-map', f'0:{stream_index}'])
+
+    cmd.append(temp_file_path)
+    process = await create_subprocess_exec(*cmd, stderr=PIPE, stdout=PIPE)
+    stdout, stderr = await process.communicate()
+
+    if process.returncode != 0:
+        err = stderr.decode().strip()
+        print(err)
+        print(f"Error modifying metadata for file: {file_name}")
+        return
+
+    osreplace(temp_file_path, file_path)
+    print(f"Metadata modified successfully for file: {file_name}")
